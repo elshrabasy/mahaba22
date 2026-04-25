@@ -1,63 +1,26 @@
-import { app, BrowserWindow } from "electron";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+name: Build
 
-// حل مشكلة __dirname في ES Module
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
-let mainWindow: BrowserWindow | null = null;
+jobs:
+  build:
+    runs-on: ubuntu-latest
 
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1400,
-    height: 900,
-    minWidth: 1200,
-    minHeight: 700,
-    title: "Mahabat Alfan ERP",
-    backgroundColor: "#f1f5f9",
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: false
-    }
-  });
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  // 🔥 تحميل التطبيق
-  if (app.isPackaged) {
-    mainWindow.loadFile(
-      path.join(app.getAppPath(), "dist", "index.html")
-    );
-  } else {
-    mainWindow.loadURL("http://localhost:5173");
-  }
+      - name: Install dependencies
+        run: npm install
 
-  // 🔥 افتح DevTools تلقائي في التطوير
-  if (!app.isPackaged) {
-    mainWindow.webContents.openDevTools();
-  }
-
-  mainWindow.on("closed", () => {
-    mainWindow = null;
-  });
-}
-
-// تشغيل التطبيق
-app.whenReady().then(() => {
-  createWindow();
-
-  app.on("activate", () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-
-// إغلاق التطبيق
-app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    app.quit();
-  }
-});
+      - name: Build project
+        run: npm run build
