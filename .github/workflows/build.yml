@@ -1,39 +1,63 @@
-name: Build ERP EXE
+import { app, BrowserWindow } from "electron";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-on:
-  workflow_dispatch:
+// حل مشكلة __dirname في ES Module
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-jobs:
-  build:
-    runs-on: windows-latest
+let mainWindow: BrowserWindow | null = null;
 
-    defaults:
-      run:
-        working-directory: mapco-erp-execution   # 🔥 الحل هنا
+function createWindow() {
+  mainWindow = new BrowserWindow({
+    width: 1400,
+    height: 900,
+    minWidth: 1200,
+    minHeight: 700,
+    title: "Mahabat Alfan ERP",
+    backgroundColor: "#f1f5f9",
 
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+    webPreferences: {
+      preload: path.join(__dirname, "preload.js"),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false
+    }
+  });
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+  // 🔥 تحميل التطبيق
+  if (app.isPackaged) {
+    mainWindow.loadFile(
+      path.join(app.getAppPath(), "dist", "index.html")
+    );
+  } else {
+    mainWindow.loadURL("http://localhost:5173");
+  }
 
-      - name: Install dependencies
-        run: npm install
+  // 🔥 افتح DevTools تلقائي في التطوير
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 
-      - name: Build project
-        run: npm run build
+  mainWindow.on("closed", () => {
+    mainWindow = null;
+  });
+}
 
-      - name: Build Windows EXE
-        run: npx electron-builder --win nsis --x64 --publish never
+// تشغيل التطبيق
+app.whenReady().then(() => {
+  createWindow();
 
-      - name: Show files
-        run: dir dist
+  app.on("activate", () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
 
-      - name: Upload EXE
-        uses: actions/upload-artifact@v4
-        with:
-          name: ERP-EXE
-          path: mapco-erp-execution/dist/**
+// إغلاق التطبيق
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") {
+    app.quit();
+  }
+});
