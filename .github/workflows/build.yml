@@ -7,6 +7,10 @@ jobs:
   build:
     runs-on: windows-latest
 
+    defaults:
+      run:
+        working-directory: mapco-erp-execution   # 🔥 الحل هنا
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -19,17 +23,17 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Build frontend + electron
+      - name: Build project
         run: npm run build
 
       - name: Build Windows EXE
         run: npx electron-builder --win nsis --x64 --publish never
 
-      - name: Show build files
+      - name: Show files
         run: dir dist
 
       - name: Upload EXE
         uses: actions/upload-artifact@v4
         with:
           name: ERP-EXE
-          path: dist/**
+          path: mapco-erp-execution/dist/**
