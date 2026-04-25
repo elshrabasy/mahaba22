@@ -1,26 +1,43 @@
-name: Build
+name: Build ERP EXE
 
 on:
-  push:
-    branches:
-      - main
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          cd mapco-erp-execution
+          npm install
 
       - name: Build project
-        run: npm run build
+        run: |
+          cd mapco-erp-execution
+          npm run build
+
+      - name: Build Windows EXE
+        run: |
+          cd mapco-erp-execution
+          npx electron-builder --win nsis --x64 --publish never
+
+      - name: Show files
+        run: |
+          cd mapco-erp-execution
+          dir dist
+
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: ERP-EXE
+          path: mapco-erp-execution/dist/**
